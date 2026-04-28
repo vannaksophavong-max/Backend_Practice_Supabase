@@ -1,59 +1,61 @@
-import supabase from '../database.js';
+import { Router } from 'express';
+import { requireAdmin } from '../middleware/admin.js';
 
-export const AdminUser = {
-  /**
-   * Paginated list of all users with optional search.
-   * Returns users without their password field.
-   */
-  async findAll({ page = 1, limit = 20, search = '' }) {
-    const from = (page - 1) * limit;
-    const to   = from + limit - 1;
+// Existing user management controllers
+import {
+  getDashboardStats,
+  getAllUsers,
+  getAdminUserById,
+  updateUser,
+  resetUserPassword,
+  deleteUser,
+} from '../controllers/admin.controller.js';
 
-    let query = supabase
-      .from('users')
-      .select('id, username, email, is_admin, created_at, updated_at', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(from, to);
+// New product controllers
+import {
+  getAllProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from '../controllers/product.controller.js';
 
-    if (search) {
-      query = query.or(`username.ilike.%${search}%,email.ilike.%${search}%`);
-    }
+// New payment controllers
+import {
+  getAllPayments,
+  getPaymentById,
+  createPayment,
+  updatePayment,
+  deletePayment,
+} from '../controllers/payment.controller.js';
 
-    const { data, error, count } = await query;
-    if (error) throw error;
+const router = Router();
 
-    return { users: data, total: count };
-  },
+// All admin routes require a valid JWT with isAdmin: true
+router.use(requireAdmin);
 
-  /**
-   * Aggregate stats for the dashboard overview card.
-   */
-  async getStats() {
-    // Total users
-    const { count: totalUsers, error: countErr } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true });
-    if (countErr) throw countErr;
+// ── Dashboard ────────────────────────────────────────────────
+router.get('/stats', getDashboardStats);
 
-    // New users in the last 7 days
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { count: newUsersThisWeek, error: newErr } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', sevenDaysAgo);
-    if (newErr) throw newErr;
+// ── User management ──────────────────────────────────────────
+router.get('/users', getAllUsers);
+router.get('/users/:id', getAdminUserById);
+router.patch('/users/:id', updateUser);
+router.patch('/users/:id/reset-password', resetUserPassword);
+router.delete('/users/:id', deleteUser);
 
-    // Admin users count
-    const { count: adminCount, error: adminErr } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_admin', true);
-    if (adminErr) throw adminErr;
+// ── Product management ───────────────────────────────────────
+router.get('/products', getAllProducts);
+router.get('/products/:id', getProductById);
+router.post('/products', createProduct);
+router.patch('/products/:id', updateProduct);
+router.delete('/products/:id', deleteProduct);
 
-    return {
-      totalUsers,
-      newUsersThisWeek,
-      adminCount,
-    };
-  },
-};
+// ── Payment history ──────────────────────────────────────────
+router.get('/payments', getAllPayments);
+router.get('/payments/:id', getPaymentById);
+router.post('/payments', createPayment);
+router.patch('/payments/:id', updatePayment);
+router.delete('/payments/:id', deletePayment);
+
+export default router;
