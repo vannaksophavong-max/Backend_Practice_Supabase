@@ -1,7 +1,7 @@
 import cors from 'cors'; // connect frontend and backend
 import express from "express";
 import rateLimit from "express-rate-limit";
-import userRoutes from "./routes/user.route.js";
+import { userRouter, productRouter } from "./routes/user.route.js";
 import adminRoutes from "./routes/admin.route.js";
 
 const app = express();
@@ -17,7 +17,8 @@ const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
 const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 60 });
 
 // Routes
-app.use("/api/v1/users", limiter, userRoutes);
+app.use("/api/v1/users", limiter, userRouter);
+app.use("/api/v1/products", productRouter);
 app.use("/api/v1/admin", adminLimiter, adminRoutes);
 
 export default app;
