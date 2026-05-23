@@ -5,9 +5,12 @@ create table if not exists users (
   username    text not null unique,
   email       text not null unique,
   password    text not null,
+  is_admin    boolean not null default false,
   created_at  timestamptz default now(),
   updated_at  timestamptz default now()
 );
+
+alter table if exists users add column if not exists is_admin boolean not null default false;
 
 -- Optional: auto-update updated_at on row changes
 create or replace function update_updated_at()

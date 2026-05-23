@@ -10,6 +10,7 @@ import supabase from '../database.js';
  *   username    text not null unique,
  *   email       text not null unique,
  *   password    text not null,
+ *   is_admin    boolean not null default false,
  *   created_at  timestamptz default now(),
  *   updated_at  timestamptz default now()
  * );
@@ -58,6 +59,7 @@ export const User = {
           username: username.toLowerCase().trim(),
           email: email.toLowerCase().trim(),
           password,
+          is_admin: false,
         },
       ])
       .select()

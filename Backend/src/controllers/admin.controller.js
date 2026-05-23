@@ -17,7 +17,7 @@ export const getDashboardStats = async (req, res) => {
 // ── GET /api/v1/admin/users ────────────────────────────────────────────────
 export const getAllUsers = async (req, res) => {
   try {
-    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const search = req.query.search?.trim() || '';
 
@@ -55,8 +55,8 @@ export const getAdminUserById = async (req, res) => {
 // ── PATCH /api/v1/admin/users/:id ────────────────────────────────────────
 const updateSchema = z.object({
   username: z.string().min(3).max(30).optional(),
-  email:    z.string().email().max(100).optional(),
-  isAdmin:  z.boolean().optional(),
+  email: z.string().email().max(100).optional(),
+  isAdmin: z.boolean().optional(),
 }).strict();
 
 export const updateUser = async (req, res) => {
@@ -69,7 +69,13 @@ export const updateUser = async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    const updated = await User.updateById(req.params.id, parsed.data);
+    const updates = { ...parsed.data };
+    if (updates.isAdmin !== undefined) {
+      updates.is_admin = updates.isAdmin;
+      delete updates.isAdmin;
+    }
+
+    const updated = await User.updateById(req.params.id, updates);
     const { password: _, ...safeUser } = updated;
     res.status(200).json({ message: 'User updated successfully.', user: safeUser });
   } catch (error) {
