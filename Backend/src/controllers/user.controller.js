@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import supabase from '../database.js';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
+import { tokenBlacklist } from '../lib/tokenBlacklist.js';
 
 const registerSchema = z.object({
   username: z.string().min(3).max(30),
@@ -66,9 +68,14 @@ export const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials.' });
 
-    // Generate JWT token
+    // Generate JWT token with jti claim
     const token = jwt.sign(
-      { id: user.id, email: user.email, isAdmin: user.is_admin ?? false },
+      {
+        id: user.id,
+        email: user.email,
+        isAdmin: user.is_admin ?? false,
+        jti: uuidv4(),
+      },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -84,8 +91,12 @@ export const loginUser = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
   try {
-    // JWT is stateless — logout is handled by the client deleting the token
-    res.status(200).json({ message: 'Logged out successfully. Please delete your token.' });
+    if (!req.user?.jti || !req.user?.exp) {
+      return res.status(400).json({ message: 'Invalid token data.' });
+    }
+
+    tokenBlacklist.add(req.user.jti, req.user.exp);
+    res.status(200).json({ message: 'Logged out successfully.' });
   } catch (error) {
     console.error('Error logging out:', error);
     res.status(500).json({ message: 'Internal server error.' });

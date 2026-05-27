@@ -9,32 +9,31 @@ export const AdminUser = {
     const { count: totalUsers, error: usersError } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true });
-    
+
     if (usersError) throw usersError;
 
     // Get total products count
     const { count: totalProducts, error: productsError } = await supabase
       .from('products')
       .select('*', { count: 'exact', head: true });
-    
+
     if (productsError) throw productsError;
 
     // Get total payments count
     const { count: totalPayments, error: paymentsError } = await supabase
       .from('payments')
       .select('*', { count: 'exact', head: true });
-    
+
     if (paymentsError) throw paymentsError;
 
-    // Get recent payments for revenue calculation
-    const { data: recentPayments } = await supabase
+    // Get all completed payments for accurate revenue calculation
+    const { data: allCompleted, error: revErr } = await supabase
       .from('payments')
-      .select('amount, status')
-      .eq('status', 'completed')
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .select('amount')
+      .eq('status', 'completed');
+    if (revErr) throw revErr;
 
-    const totalRevenue = recentPayments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    const totalRevenue = allCompleted?.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) || 0;
 
     return {
       totalUsers,
@@ -79,7 +78,7 @@ export const AdminUser = {
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -94,7 +93,7 @@ export const AdminUser = {
       .eq('id', id)
       .select()
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   },
@@ -107,7 +106,7 @@ export const AdminUser = {
       .from('users')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
     return true;
   },
