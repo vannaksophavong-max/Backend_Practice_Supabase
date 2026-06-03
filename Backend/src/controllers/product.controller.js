@@ -1,14 +1,20 @@
 import { Product } from '../models/product.model.js';
 import { z } from 'zod';
 
+const imageUrlSchema = z.union([
+  z.string().url(),
+  z.string().regex(/^data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+$/),
+  z.literal(''),
+]).optional();
+
 const productSchema = z.object({
-  name:        z.string().min(1).max(200),
+  name: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
-  price:       z.number().min(0),
-  stock:       z.number().int().min(0).default(0),
-  category:    z.string().max(100).optional(),
-  image_url:   z.string().url().optional().or(z.literal('')),
-  is_active:   z.boolean().default(true),
+  price: z.number().min(0),
+  stock: z.number().int().min(0).default(0),
+  category: z.string().max(100).optional(),
+  image_url: imageUrlSchema,
+  is_active: z.boolean().default(true),
 });
 
 const updateProductSchema = productSchema.partial();
@@ -16,10 +22,10 @@ const updateProductSchema = productSchema.partial();
 // ── GET /api/v1/admin/products ─────────────────────────────────────────────
 export const getAllProducts = async (req, res) => {
   try {
-    const page      = Math.max(1, parseInt(req.query.page)  || 1);
-    const limit     = Math.min(100, parseInt(req.query.limit) || 20);
-    const search    = req.query.search?.trim()   || '';
-    const category  = req.query.category?.trim() || '';
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit) || 20);
+    const search = req.query.search?.trim() || '';
+    const category = req.query.category?.trim() || '';
     const activeOnly = req.query.active === 'true';
 
     const { products, total } = await Product.findAll({ page, limit, search, category, activeOnly });
