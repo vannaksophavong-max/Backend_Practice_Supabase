@@ -9,22 +9,35 @@ export const AdminUser = {
     const { count: totalUsers, error: usersError } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true });
-
     if (usersError) throw usersError;
 
     // Get total products count
     const { count: totalProducts, error: productsError } = await supabase
       .from('products')
       .select('*', { count: 'exact', head: true });
-
     if (productsError) throw productsError;
 
     // Get total payments count
     const { count: totalPayments, error: paymentsError } = await supabase
       .from('payments')
       .select('*', { count: 'exact', head: true });
-
     if (paymentsError) throw paymentsError;
+
+    // Get new users this week
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const { count: newUsersThisWeek, error: newUsersError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', oneWeekAgo.toISOString());
+    if (newUsersError) throw newUsersError;
+
+    // Get admin count
+    const { count: adminCount, error: adminCountError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_admin', true);
+    if (adminCountError) throw adminCountError;
 
     // Get all completed payments for accurate revenue calculation
     const { data: allCompleted, error: revErr } = await supabase
@@ -40,6 +53,8 @@ export const AdminUser = {
       totalProducts,
       totalPayments,
       totalRevenue,
+      newUsersThisWeek,
+      adminCount,
     };
   },
 
