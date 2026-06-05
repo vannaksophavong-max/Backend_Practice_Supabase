@@ -18,7 +18,7 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 // Health check
 app.get('/', (req, res) => res.send('Server is running 🚀'));
@@ -38,4 +38,3 @@ app.use('/api/v1/products', productRouter);
 app.use('/api/v1/admin', adminLimiter, adminRoutes);
 
 export default app;
-
